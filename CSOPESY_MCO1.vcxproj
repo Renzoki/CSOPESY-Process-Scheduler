@@ -123,7 +123,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CSOPESY_MCO1.cpp" />
+    <ClCompile Include="Config.cpp" />
+    <ClCompile Include="InstructionExecutor.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ReportUtil.cpp" />
+    <ClCompile Include="Scheduler.cpp" />
+    <ClCompile Include="ScreenManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="InstructionExecutor.h" />
+    <ClInclude Include="Process.h" />
+    <ClInclude Include="ReportUtil.h" />
+    <ClInclude Include="Scheduler.h" />
+    <ClInclude Include="ScreenManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="config.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

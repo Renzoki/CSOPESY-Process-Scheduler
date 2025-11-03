@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include "Config.h"
 
 std::vector<std::string> splitCommand(const std::string& cmd) {
     std::istringstream iss(cmd);
@@ -19,7 +20,7 @@ int main() {
 
     std::cout << "CSOPESY MCO1 !!!\n";
     while (true) {
-        std::cout << "root:> ";
+        std::cout << "> ";
         std::getline(std::cin, input);
 
         if (input.empty()) continue;
@@ -35,8 +36,11 @@ int main() {
                 std::cout << "Usage: initialize\n";
                 continue;
             }
-            std::cout << "Initializing from config.txt...\n";
-            // TODO: call implemented Config::load()
+            
+            if (!Config::load("config.txt")) {
+                std::cout << "Initialization failed.\n";
+                continue;
+            }
             initialized = true;
         }
         else if (cmd == "screen") {
