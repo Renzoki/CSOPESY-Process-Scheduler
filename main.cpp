@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include "Config.h"
+#include "ScreenManager.h"
 
 std::vector<std::string> splitCommand(const std::string& cmd) {
     std::istringstream iss(cmd);
@@ -49,11 +50,22 @@ int main() {
                 std::cout << "Error: Run 'initialize' first.\n";
                 continue;
             }
-            if (tokens.size() >= 2 && tokens[1] == "-ls") {
-                std::cout << "No running processes.\n";
+            if (tokens.size() >= 2) {
+                if (tokens[1] == "-ls") {
+                    ScreenManager::listProcesses();
+                }
+                else if (tokens[1] == "-s" && tokens.size() >= 3) {
+                    ScreenManager::createAndAttach(tokens[2]);
+                }
+                else if (tokens[1] == "-r" && tokens.size() >= 3) {
+                    ScreenManager::attachToProcess(tokens[2]); 
+                }
+                else {
+                    std::cout << "Usage: screen -ls | screen -s <name> | screen -r <name>\n";
+                }
             }
             else {
-                std::cout << "Usage: screen -ls\n";
+                std::cout << "Usage: screen -ls | screen -s <name> | screen -r <name>\n";
             }
         }
         else if (cmd == "scheduler-start" || cmd == "scheduler-stop" ||
