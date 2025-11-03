@@ -41,6 +41,7 @@ int main() {
                 std::cout << "Initialization failed.\n";
                 continue;
             }
+            Config::printSummary();
             initialized = true;
         }
         else if (cmd == "screen") {
