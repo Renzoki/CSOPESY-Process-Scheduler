@@ -21,8 +21,15 @@ public:
     uint16_t getVariable(const std::string& name) const;
     void setVariable(const std::string& name, uint16_t value); 
     const std::vector<std::string>& getLogs() const; 
-    void addLog(const std::string& msg); 
+    void addLog(const std::string& msg, int coreId);
     void executeNextInstruction();
+    // process states
+    enum State { READY, RUNNING, SLEEPING, FINISHED };
+    State getState() const;
+    void setState(State s);
+    int getSleepTicks() const; 
+    void executeNextInstructionWithCore(int coreId);
+    void setSleepTicks(int ticks);
 
 private:
     std::string name;
@@ -31,4 +38,6 @@ private:
     size_t current_line;
     std::map<std::string, uint16_t> variables;
     std::vector<std::string> logs;
+    State state;
+    int sleepTicks;
 };

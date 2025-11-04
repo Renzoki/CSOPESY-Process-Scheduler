@@ -1,17 +1,38 @@
 #include "Scheduler.h"
 #include <iostream>
 #include "Config.h"
+#include "Process.h"
 #include "ScreenManager.h" // add process to global list
 #include <random>
 #include <string>
+#include <vector>
 
 int Scheduler::nextProcessId = 1;
+int Scheduler::totalTicks = 0;
 bool Scheduler::running = false;
-int Scheduler::tickCounter = 0;
-int Scheduler::tickInterval = 1; // will be set from config later
+int Scheduler::tickCounter = 0; //at this point i dont know which of these are used so im keeping them all
+int Scheduler::tickInterval = 0; // will be set from config later
+std::vector<CPUCore> Scheduler::cores;
+std::vector<Process*> Scheduler::readyQueue;
+std::vector<Process*> Scheduler::sleepingProcesses;
 
 void Scheduler::initialize() {
     nextProcessId = 1;
+    running = false;
+    tickCounter = 0;
+    tickInterval = 0;
+
+    // Initialize CPU cores
+    cores.clear();
+    int numCpu = Config::getNumCpu();
+    for (int i = 0; i < numCpu; ++i) {
+        CPUCore core;
+        core.id = i;
+        cores.push_back(core);
+    }
+
+    readyQueue.clear();
+    sleepingProcesses.clear();
 }
 
 void Scheduler::start() {
@@ -30,13 +51,78 @@ bool Scheduler::isRunning() {
     return running;
 }
 
+int Scheduler::getTotalTicks() {
+    return totalTicks;
+}
+
 void Scheduler::tick() {
-    if (!running) return;
-    tickCounter++;
-    if (tickCounter >= tickInterval) {
-        createDummyProcess();
-        tickCounter = 0;
+    if (running) {
+        tickCounter++;
+        if (tickCounter >= tickInterval) {
+            createDummyProcess();
+            totalTicks++;
+            tickCounter = 0;
+        }
     }
+
+    for (auto it = sleepingProcesses.begin(); it != sleepingProcesses.end();) {
+        Process* p = *it;
+        if (p->getSleepTicks() > 0) {
+            p->setSleepTicks(p->getSleepTicks() - 1);
+        }
+        if (p->getSleepTicks() <= 0) { 
+            p->setState(Process::READY);
+            readyQueue.push_back(p);
+            it = sleepingProcesses.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    for (auto& core : cores) {
+        if (core.currentProcess == nullptr && !readyQueue.empty()) {
+            core.currentProcess = readyQueue.front();
+            readyQueue.erase(readyQueue.begin());
+            core.currentProcess->setState(Process::RUNNING);
+            core.quantumRemaining = Config::getQuantumCycles();
+        }
+    }
+
+    for (auto& core : cores) {
+        if (core.currentProcess != nullptr) {
+            // do one instruction
+            core.currentProcess->executeNextInstructionWithCore(core.id); 
+
+            // check if finished
+            if (core.currentProcess->isFinished()) {
+                core.currentProcess->setState(Process::FINISHED);
+                core.currentProcess = nullptr;
+            }
+            else {
+
+                if (core.currentProcess->isFinished()) {
+                    core.currentProcess->setState(Process::FINISHED);
+                    core.currentProcess = nullptr;
+                }
+                else {
+                    std::string schedType = Config::getScheduler();
+                    if (schedType == "rr") {
+                        core.quantumRemaining--;
+                        if (core.quantumRemaining <= 0) {
+                            core.currentProcess->setState(Process::READY);
+                            readyQueue.push_back(core.currentProcess);
+                            core.currentProcess = nullptr;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //std::cout << "[DBG] Cores: " << cores.size()
+    //    << ", Ready: " << readyQueue.size()
+    //    << ", Sleeping: " << sleepingProcesses.size() << "\n";
 }
 
 std::string Scheduler::generateProcessName() {
@@ -94,9 +180,14 @@ void Scheduler::createDummyProcess() {
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(minIns, maxIns);
     int numIns = dis(gen);
+    std::cout << "[DBG] Creating " << name << " with " << numIns << " instructions\n"; //debug
     auto instructions = generateDummyInstructions(numIns);
     Process newProc(name, instructions);
     ScreenManager::addProcess(newProc); // storage is in screenmanager
+    Process& procRef = ScreenManager::getProcesses().back();
+    procRef.setState(Process::READY);
+    readyQueue.push_back(&procRef);
+    //std::cout << "[debug] Added process to ready queue. Ready count: " << readyQueue.size() << "\n";
 }
 
 void Scheduler::generateBatch(int count) {

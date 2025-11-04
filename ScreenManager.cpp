@@ -1,4 +1,5 @@
 #include "ScreenManager.h"
+#include "Scheduler.h" 
 #include <random>
 #include "Config.h"
 #include <iostream>
@@ -6,6 +7,11 @@
 #include <algorithm>
 
 std::vector<Process> global_processes;
+static struct Initializer {
+    Initializer() {
+        global_processes.reserve(10000); 
+    }
+} init;
 
 
 std::vector<Process>& ScreenManager::getProcesses() {
@@ -20,13 +26,14 @@ void ScreenManager::listProcesses() {
     bool found = false;
     for (const auto& p : global_processes) {
         if (!p.isFinished()) {
-            std::cout << p.getName() << "\n";
+            std::cout << "\n" << p.getName() << " (line " << p.getCurrentLine() << ")\n";
             found = true;
         }
     }
     if (!found) {
         std::cout << "No running processes.\n";
     }
+    std::cout << "\n===============\n";
 }
 
 void ScreenManager::createAndAttach(const std::string& name) {
@@ -37,7 +44,7 @@ void ScreenManager::createAndAttach(const std::string& name) {
         });
 
     if (it != global_processes.end()) {
-        std::cout << "Process " << name << " already exists.\n";
+        std::cout << "\nProcess " << name << " already exists.\n";
         return;
     }
 
@@ -45,7 +52,7 @@ void ScreenManager::createAndAttach(const std::string& name) {
     std::vector<Instruction> instructions;
     Instruction printInstr;
     printInstr.type = Instruction::PRINT;
-    printInstr.args = { "\"Hello world from <name>!\"" };
+    printInstr.args = { "\"\nHello world from <name>!\"" };
     instructions.push_back(printInstr);
     Process newProc(name, instructions);
     global_processes.push_back(newProc);
@@ -76,13 +83,9 @@ void ScreenManager::createAndAttach(const std::string& name) {
 
             std::cout << "Current instruction line: " << procRef.getCurrentLine() << "\n";
             std::cout << "Lines of code: " << procRef.getTotalLines() << "\n";
-            // TEMP: execute next instruction on every process-smi (for testing)
-            if (!procRef.isFinished()) {
-                procRef.executeNextInstruction();
-            }
         }
         else {
-            std::cout << "Unknown command in screen.\n";
+            std::cout << "\nUnknown command in screen.\n";
         }
     }
 }
@@ -101,7 +104,7 @@ bool ScreenManager::attachToProcess(const std::string& name) {
 
     std::string cmd;
     while (true) {
-        std::cout << it->getName() << ":> ";
+        std::cout << "\n" << it->getName() << ":> ";
         std::getline(std::cin, cmd);
         if (cmd == "exit") {
             break;
@@ -123,12 +126,10 @@ bool ScreenManager::attachToProcess(const std::string& name) {
 
             std::cout << "Current instruction line: " << it->getCurrentLine() << "\n";
             std::cout << "Lines of code: " << it->getTotalLines() << "\n";
-            if (!it->isFinished()) {
-                it->executeNextInstruction();
-            }
+
         }
         else {
-            std::cout << "Unknown command in screen.\n";
+            std::cout << "\nUnknown command in screen.\n";
         }
     }
     return true;
