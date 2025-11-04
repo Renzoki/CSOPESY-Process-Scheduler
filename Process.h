@@ -1,14 +1,38 @@
 #pragma once
 #include <string>
+#include <vector>
+#include <map>
+
+// Embedded instruction definition
+struct Instruction {
+    enum Type {
+        PRINT,
+        DECLARE,
+        ADD,
+        SUBTRACT,
+        SLEEP,
+        FOR
+    };
+    Type type;
+    std::vector<std::string> args;
+};
 
 class Process {
 public:
-    Process(const std::string& name);
+    Process(const std::string& name, const std::vector<Instruction>& instructions);
     std::string getName() const;
     bool isFinished() const;
     void setFinished(bool f);
+    size_t getCurrentLine() const;
+    size_t getTotalLines() const;
+    void advanceLine();
+    uint16_t getVariable(const std::string& name) const;
+    void setVariable(const std::string& name, uint16_t value);
 
 private:
     std::string name;
     bool finished;
+    std::vector<Instruction> instructions;
+    size_t current_line;
+    std::map<std::string, uint16_t> variables;
 };

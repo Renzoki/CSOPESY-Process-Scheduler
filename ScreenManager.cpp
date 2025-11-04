@@ -1,4 +1,5 @@
 #include "ScreenManager.h"
+#include <random>
 #include <iostream>
 #include <algorithm>
 
@@ -25,6 +26,17 @@ void ScreenManager::listProcesses() {
     }
 }
 
+std::vector<Instruction> generateDummyInstructions(int count) {
+    std::vector<Instruction> ins;
+    for (int i = 0; i < count; ++i) {
+        Instruction instr;
+        instr.type = Instruction::PRINT;
+        instr.args = { "\"Hello world from <name>!\"" };
+        ins.push_back(instr);
+    }
+    return ins;
+}
+
 void ScreenManager::createAndAttach(const std::string& name) {
     // heck if process with same name already exists and is running
     auto it = std::find_if(global_processes.begin(), global_processes.end(),
@@ -37,14 +49,21 @@ void ScreenManager::createAndAttach(const std::string& name) {
         return;
     }
 
-    // new process
-    Process newProc(name);
+    int minIns = 3;
+    int maxIns = 8;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(minIns, maxIns);
+    int numIns = dis(gen);
+    auto instructions = generateDummyInstructions(numIns);
+    Process newProc(name, instructions);
     global_processes.push_back(newProc);
+    Process& procRef = global_processes.back();
 
     // mock data for now
     std::string cmd;
     while (true) {
-        std::cout << name << ":> ";
+        std::cout << procRef.getName() << ":> ";
         std::getline(std::cin, cmd);
         if (cmd == "exit") {
             break;
@@ -54,8 +73,8 @@ void ScreenManager::createAndAttach(const std::string& name) {
             std::cout << "ID: " << global_processes.size() << "\n";
             std::cout << "Logs:\n";
             std::cout << "(0/0/0 00:00:00AM) Core:0 \"Hello world from " << name << "!\"\n";
-            std::cout << "Current instruction line: 0\n";
-            std::cout << "Lines of code: 0\n";
+            std::cout << "Current instruction line: " << procRef.getCurrentLine() << "\n";
+            std::cout << "Lines of code: " << procRef.getTotalLines() << "\n";
         }
         else {
             std::cout << "Unknown command in screen.\n";
@@ -74,7 +93,6 @@ bool ScreenManager::attachToProcess(const std::string& name) {
         return false;
     }
 
-    // Enter process screen loop
     std::string cmd;
     while (true) {
         std::cout << it->getName() << ":> ";
@@ -87,8 +105,8 @@ bool ScreenManager::attachToProcess(const std::string& name) {
             std::cout << "ID: 1\n";
             std::cout << "Logs:\n";
             std::cout << "(0/0/0 00:00:00AM) Core:0 \"Hello world from " << it->getName() << "!\"\n";
-            std::cout << "Current instruction line: 0\n";
-            std::cout << "Lines of code: 0\n";
+            std::cout << "Current instruction line: " << it->getCurrentLine() << "\n";
+            std::cout << "Lines of code: " << it->getTotalLines() << "\n";
         }
         else {
             std::cout << "Unknown command in screen.\n";
