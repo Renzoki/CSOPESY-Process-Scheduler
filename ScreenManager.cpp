@@ -7,6 +7,7 @@
 
 std::vector<Process> global_processes;
 
+
 std::vector<Process>& ScreenManager::getProcesses() {
     return global_processes;
 }
@@ -28,44 +29,6 @@ void ScreenManager::listProcesses() {
     }
 }
 
-std::vector<Instruction> generateDummyInstructions(int count) {
-    std::vector<Instruction> ins;
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> opDist(0, 5); // 0=PRINT, 1=DECLARE, etc
-
-    for (int i = 0; i < count; ++i) {
-        Instruction instr;
-        int op = opDist(gen);
-        if (op == 0) {
-            instr.type = Instruction::PRINT;
-            instr.args = { "\"Hello world from <name>!\"" };
-        }
-        else if (op == 1) {
-            instr.type = Instruction::DECLARE;
-            instr.args = { "x", "0" };
-        }
-        else if (op == 2) {
-            instr.type = Instruction::ADD;
-            instr.args = { "x", "5", "10" };
-        }
-        else if (op == 3) {
-            instr.type = Instruction::SUBTRACT;
-            instr.args = { "x", "x", "1" };
-        }
-        else if (op == 4) {
-            instr.type = Instruction::SLEEP;
-            instr.args = { "2" };
-        }
-        else {
-            instr.type = Instruction::FOR;
-            instr.args = { "2" }; // repeat 2 times
-        }
-        ins.push_back(instr);
-    }
-    return ins;
-}
-
 void ScreenManager::createAndAttach(const std::string& name) {
     // heck if process with same name already exists and is running
     auto it = std::find_if(global_processes.begin(), global_processes.end(),
@@ -79,12 +42,11 @@ void ScreenManager::createAndAttach(const std::string& name) {
     }
 
     int minIns = Config::getMinIns();
-    int maxIns = Config::getMaxIns();
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(minIns, maxIns);
-    int numIns = dis(gen);
-    auto instructions = generateDummyInstructions(numIns);
+    std::vector<Instruction> instructions;
+    Instruction printInstr;
+    printInstr.type = Instruction::PRINT;
+    printInstr.args = { "\"Hello world from <name>!\"" };
+    instructions.push_back(printInstr);
     Process newProc(name, instructions);
     global_processes.push_back(newProc);
     Process& procRef = global_processes.back();

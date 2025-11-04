@@ -4,6 +4,7 @@
 #include <vector>
 #include "Config.h"
 #include "ScreenManager.h"
+#include "Scheduler.h"
 
 std::vector<std::string> splitCommand(const std::string& cmd) {
     std::istringstream iss(cmd);
@@ -68,13 +69,14 @@ int main() {
                 std::cout << "Usage: screen -ls | screen -s <name> | screen -r <name>\n";
             }
         }
-        else if (cmd == "scheduler-start" || cmd == "scheduler-stop" ||
-            cmd == "scheduler-test" || cmd == "report-util") {
+        else if (cmd == "scheduler-test") {
             if (!initialized) {
                 std::cout << "Error: Run 'initialize' first.\n";
                 continue;
             }
-            std::cout << "Command not implemented yet :(\n";
+            std::cout << "Generating 5 dummy processes...\n";
+            Scheduler::generateBatch(5);
+            std::cout << "Done! :D\n";
         }
         else {
             std::cout << "Unknown command: " << cmd << " >:( \n";
