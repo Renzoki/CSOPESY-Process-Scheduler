@@ -20,8 +20,11 @@ int main() {
     std::string input;
     bool initialized = false;
 
+
     std::cout << "CSOPESY MCO1 !!!\n";
     while (true) {
+        Scheduler::tick(); // ticks!
+
         std::cout << "> ";
         std::getline(std::cin, input);
 
@@ -78,9 +81,20 @@ int main() {
             Scheduler::generateBatch(5);
             std::cout << "Done! :D\n";
         }
+        else if (cmd == "scheduler-start") {
+            if (!initialized) {
+                std::cout << "Error: Run 'initialize' first.\n";
+                continue;
+            }
+            Scheduler::start();
+        }
+        else if (cmd == "scheduler-stop") {
+            Scheduler::stop();
+        }
         else {
             std::cout << "Unknown command: " << cmd << " >:( \n";
         }
+
     }
 
     std::cout << "Thanks!\n";

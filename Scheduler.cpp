@@ -1,13 +1,42 @@
 #include "Scheduler.h"
+#include <iostream>
 #include "Config.h"
 #include "ScreenManager.h" // add process to global list
 #include <random>
 #include <string>
 
 int Scheduler::nextProcessId = 1;
+bool Scheduler::running = false;
+int Scheduler::tickCounter = 0;
+int Scheduler::tickInterval = 1; // will be set from config later
 
 void Scheduler::initialize() {
     nextProcessId = 1;
+}
+
+void Scheduler::start() {
+    running = true;
+    tickInterval = Config::getBatchProcessFreq();
+    std::cout << "Scheduler started. Generating a process every "
+        << tickInterval << " ticks.\n";
+}
+
+void Scheduler::stop() {
+    running = false;
+    std::cout << "Scheduler stopped.\n";
+}
+
+bool Scheduler::isRunning() {
+    return running;
+}
+
+void Scheduler::tick() {
+    if (!running) return;
+    tickCounter++;
+    if (tickCounter >= tickInterval) {
+        createDummyProcess();
+        tickCounter = 0;
+    }
 }
 
 std::string Scheduler::generateProcessName() {
@@ -75,3 +104,4 @@ void Scheduler::generateBatch(int count) {
         createDummyProcess();
     }
 }
+
