@@ -25,3 +25,30 @@ void Process::setVariable(const std::string& name, uint16_t value) {
     if (value > 65535) value = 65535;
     variables[name] = value;
 }
+
+const std::vector<std::string>& Process::getLogs() const {
+    return logs;
+}
+
+void Process::addLog(const std::string& msg) {
+    logs.push_back(msg);
+}
+
+void Process::executeNextInstruction() {
+    if (finished || current_line >= instructions.size()) {
+        finished = true;
+        return;
+    }
+
+    const Instruction& instr = instructions[current_line];
+
+    if (instr.type == Instruction::PRINT) { //unfinished
+        std::string msg = "(0/0/0 00:00:00AM) Core:0 \"Hello world from " + name + "!\"";
+        addLog(msg);
+    }
+    advanceLine();
+
+    if (current_line >= instructions.size()) {
+        finished = true;
+    }
+}

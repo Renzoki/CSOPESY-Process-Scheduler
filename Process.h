@@ -3,17 +3,9 @@
 #include <vector>
 #include <map>
 
-// Embedded instruction definition
 struct Instruction {
-    enum Type {
-        PRINT,
-        DECLARE,
-        ADD,
-        SUBTRACT,
-        SLEEP,
-        FOR
-    };
-    Type type;
+    enum Type { PRINT, DECLARE, ADD, SUBTRACT, SLEEP, FOR };
+    Type type = Type::PRINT;
     std::vector<std::string> args;
 };
 
@@ -27,7 +19,10 @@ public:
     size_t getTotalLines() const;
     void advanceLine();
     uint16_t getVariable(const std::string& name) const;
-    void setVariable(const std::string& name, uint16_t value);
+    void setVariable(const std::string& name, uint16_t value); 
+    const std::vector<std::string>& getLogs() const; 
+    void addLog(const std::string& msg); 
+    void executeNextInstruction();
 
 private:
     std::string name;
@@ -35,4 +30,5 @@ private:
     std::vector<Instruction> instructions;
     size_t current_line;
     std::map<std::string, uint16_t> variables;
+    std::vector<std::string> logs;
 };
