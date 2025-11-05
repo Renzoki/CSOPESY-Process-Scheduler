@@ -86,18 +86,17 @@ void Process::executeInstruction(const Instruction& instr, int nestedLevel) {
         else {
             std::string msg = instr.args[0];
 
-            // Detect if it's a quoted string
-            if ((msg.front() == '"' && msg.back() == '"') ||
-                (msg.front() == '\'' && msg.back() == '\'')) {
-                // Literal string (remove quotes)
+            if (!msg.empty() && msg.front() == '(' && msg.back() == ')')
+                msg = msg.substr(1, msg.size() - 2);
+
+            if (!msg.empty() && ((msg.front() == '"' && msg.back() == '"') ||
+                (msg.front() == '\'' && msg.back() == '\''))) {
                 out = msg.substr(1, msg.size() - 2);
             }
             else if (variables.find(msg) != variables.end()) {
-                // Variable name
-                out = std::to_string(variables[msg]);
+                out = std::to_string(variables.at(msg));
             }
             else if (isNumber(msg)) {
-                // Direct numeric value
                 out = msg;
             }
             else {
@@ -106,10 +105,9 @@ void Process::executeInstruction(const Instruction& instr, int nestedLevel) {
         }
 
         addLog(out);
-        std::cout << "[" << name << "] " << out << std::endl; // also display in console
+        std::cout << "[" << name << "] " << out << std::endl;
         break;
     }
-
 
     case Instruction::DECLARE: {
         if (instr.args.size() < 2) break;
