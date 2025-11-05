@@ -26,6 +26,8 @@ public:
     const std::vector<std::string>& getLogs() const;
     void addLog(const std::string& msg);              // for screen/manual
     void addLog(const std::string& msg, int coreId);  // for scheduler
+    int getAssignedCoreId() const { return assignedCoreId; }
+    void setAssignedCoreId(int id) { assignedCoreId = id; }
 
     void executeNextInstruction(int coreId = -1, int nestedLevel = 0);
     void executeInstruction(const Instruction& instr, int coreId, int nestedLevel);
@@ -43,6 +45,7 @@ private:
     size_t current_line;
     std::map<std::string, uint16_t> variables;
     std::vector<std::string> logs;
+    int assignedCoreId = -1;
 
     State state;
     int sleepTicks;

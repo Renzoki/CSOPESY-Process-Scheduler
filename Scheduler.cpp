@@ -2,10 +2,11 @@
 #include <iostream>
 #include "Config.h"
 #include "Process.h"
-#include "ScreenManager.h" // add process to global list
+#include "ScreenManager.h"
 #include <random>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 int Scheduler::nextProcessId = 1;
 int Scheduler::totalTicks = 0;
@@ -69,6 +70,7 @@ void Scheduler::tick() {
         }
     }
 
+    // Handle sleeping processes
     for (auto it = sleepingProcesses.begin(); it != sleepingProcesses.end();) {
         int pid = *it;
         Process& p = global_processes[pid];
@@ -85,15 +87,7 @@ void Scheduler::tick() {
         }
     }
 
-    for (auto& core : cores) {
-        if (core.currentProcessId == -1 && !readyQueue.empty()) {
-            core.currentProcessId = readyQueue.front();
-            readyQueue.erase(readyQueue.begin());
-            global_processes[core.currentProcessId].setState(Process::RUNNING);
-            core.quantumRemaining = Config::getQuantumCycles();
-        }
-    }
-
+    // Execute on all cores
     for (auto& core : cores) {
         if (core.currentProcessId != -1) {
             Process& proc = global_processes[core.currentProcessId];
@@ -104,18 +98,53 @@ void Scheduler::tick() {
                 core.currentProcessId = -1;
             }
             else if (proc.getState() == Process::SLEEPING) {
-                sleepingProcesses.push_back(core.currentProcessId);
-                core.currentProcessId = -1;
+                // For RR: free core immediately
+                if (Config::getScheduler() == "rr") {
+                    sleepingProcesses.push_back(core.currentProcessId);
+                    core.currentProcessId = -1;
+                }
+                // For FCFS: keep process on core (handled by sleep loop)
             }
             else {
+                // RR preemption
                 if (Config::getScheduler() == "rr") {
                     core.quantumRemaining--;
                     if (core.quantumRemaining <= 0) {
                         proc.setState(Process::READY);
-                        readyQueue.push_back(core.currentProcessId);
+                        // Avoid duplicate entries in readyQueue
+                        if (std::find(readyQueue.begin(), readyQueue.end(), core.currentProcessId) == readyQueue.end()) {
+                            readyQueue.push_back(core.currentProcessId);
+                        }
                         core.currentProcessId = -1;
                     }
                 }
+                // FCFS: do nothing (runs to completion)
+            }
+        }
+    }
+
+    // Assign processes AFTER execution (critical for both schedulers)
+    if (Config::getScheduler() == "fcfs") {
+        // Multi-core FCFS: assign 1 process per free core
+        for (auto& core : cores) {
+            if (core.currentProcessId == -1 && !readyQueue.empty()) {
+                int pid = readyQueue.front();
+                readyQueue.erase(readyQueue.begin());
+                core.currentProcessId = pid;
+                global_processes[pid].setState(Process::RUNNING);
+                global_processes[pid].setAssignedCoreId(core.id);
+            }
+        }
+    }
+    else { // Round Robin
+        for (auto& core : cores) {
+            if (core.currentProcessId == -1 && !readyQueue.empty()) {
+                int pid = readyQueue.front();
+                readyQueue.erase(readyQueue.begin());
+                core.currentProcessId = pid;
+                global_processes[pid].setState(Process::RUNNING);
+                global_processes[pid].setAssignedCoreId(core.id);
+                core.quantumRemaining = Config::getQuantumCycles();
             }
         }
     }
@@ -130,73 +159,46 @@ std::string Scheduler::generateProcessName() {
     return name;
 }
 
-//std::vector<Instruction> generateDummyInstructions(int count) { //test
-//    std::vector<Instruction> ins;
-//
-//    Instruction d; d.type = Instruction::DECLARE; d.args = { "x", "5" }; ins.push_back(d);
-//
-//    Instruction a; a.type = Instruction::ADD; a.args = { "y", "x", "10" }; ins.push_back(a);
-//
-//    Instruction s; s.type = Instruction::SUBTRACT; s.args = { "z", "y", "3" }; ins.push_back(s);
-//
-//    Instruction px; px.type = Instruction::PRINT; px.args = { "x" }; ins.push_back(px);
-//    Instruction py; py.type = Instruction::PRINT; py.args = { "y" }; ins.push_back(py);
-//    Instruction pz; pz.type = Instruction::PRINT; pz.args = { "z" }; ins.push_back(pz);
-//
-//    // SLEEP
-//    Instruction sl; sl.type = Instruction::SLEEP; sl.args = { "2" }; ins.push_back(sl);
-//    Instruction p4; p4.type = Instruction::PRINT; p4.args = { "\"After sleep\"" }; ins.push_back(p4);
-//    Instruction f; f.type = Instruction::FOR; f.args = { "PRINT", "2", "\"Loop\"" }; ins.push_back(f);
-//
-//    for (int i = 0; i < 100; ++i) {
-//        Instruction p;
-//        p.type = Instruction::PRINT;
-//        p.args = {};
-//        ins.push_back(p);
-//    }
-//
-//    return ins; 
-//}
-
-
 std::vector<Instruction> generateDummyInstructions(int count) {
     std::vector<Instruction> ins;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> opDist(0, 5); // 0=PRINT, 1=DECLARE, ..., 5=FOR
+    std::uniform_int_distribution<> opDist(0, 5);
 
     for (int i = 0; i < count; ++i) {
         Instruction instr;
         int op = opDist(gen);
-        if (op == 0) {
+
+        switch (op) {
+        case 0: // PRINT
             instr.type = Instruction::PRINT;
-            instr.args = {}; 
-        }
-        else if (op == 1) {
+            instr.args = {};
+            break;
+        case 1: // DECLARE
             instr.type = Instruction::DECLARE;
-            instr.args = {"x", "0"};
-        }
-        else if (op == 2) {
+            instr.args = { "x", std::to_string(gen() % 100) };
+            break;
+        case 2: // ADD
             instr.type = Instruction::ADD;
-            instr.args = {"x", "5", "10"};
-        }
-        else if (op == 3) {
+            instr.args = { "x", "5", "10" };
+            break;
+        case 3: // SUBTRACT
             instr.type = Instruction::SUBTRACT;
-            instr.args = {"x", "x", "1"};
-        }
-        else if (op == 4) {
+            instr.args = { "x", "x", "1" };
+            break;
+        case 4: // SLEEP
             instr.type = Instruction::SLEEP;
-            instr.args = {"2"};
-        }
-        else {
+            instr.args = { std::to_string(gen() % 3 + 1) };
+            break;
+        case 5: // FOR
             instr.type = Instruction::FOR;
-            instr.args = { "PRINT", "3" }; 
+            instr.args = { "PRINT", std::to_string(gen() % 3 + 1) };
+            break;
         }
         ins.push_back(instr);
     }
     return ins;
 }
-
 
 void Scheduler::createDummyProcess() {
     std::string name = generateProcessName();
@@ -209,8 +211,6 @@ void Scheduler::createDummyProcess() {
     std::cout << "[DBG] Creating " << name << " with " << numIns << " instructions\n";
 
     auto instructions = generateDummyInstructions(numIns);
-
-    // Add to Scheduler's storage
     global_processes.emplace_back(name, instructions);
     int processId = static_cast<int>(global_processes.size()) - 1;
     global_processes[processId].setState(Process::READY);

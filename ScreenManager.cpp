@@ -4,6 +4,7 @@
 #include "Config.h"
 #include <iostream>
 #include <iterator>
+#include <chrono>
 #include <algorithm>
 
 static struct Initializer {
@@ -19,17 +20,76 @@ std::vector<Process>& ScreenManager::getProcesses() {
 
 void ScreenManager::listProcesses() {
     auto& procs = Scheduler::getProcesses();
-    bool found = false;
-    for (size_t i = 0; i < procs.size(); ++i) {
-        if (!procs[i].isFinished()) {
-            std::cout << "\n" << procs[i].getName() << " (line " << procs[i].getCurrentLine() << ")\n";
-            found = true;
+    if (procs.empty()) {
+        std::cout << "No processes at all.\n";
+        return;
+    }
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(now);
+    std::tm tm;
+    localtime_s(&tm, &time);
+
+    char dateStr[12];
+    std::strftime(dateStr, sizeof(dateStr), "%m/%d/%Y", &tm);
+
+    std::cout << "\nLast updated: " << dateStr << "\n\n";
+
+    int totalCores = Config::getNumCpu();
+    int usedCores = 0;
+    for (const auto& core : Scheduler::cores) {
+        if (core.currentProcessId != -1) {
+            usedCores++;
         }
     }
-    if (!found) {
-        std::cout << "No running processes.\n";
+    int cpuUtil = totalCores > 0 ? (usedCores * 100) / totalCores : 0;
+
+    std::cout << "root:> screen -ls\n";
+    std::cout << "CPU utilization: " << cpuUtil << "%\n";
+    std::cout << "Cores used: " << usedCores << "\n";
+    std::cout << "Cores available: " << (totalCores - usedCores) << "\n\n";
+
+    std::cout << "----------------------------------------\n";
+    std::cout << "Running processes:\n";
+
+    bool foundRunning = false;
+    for (const auto& p : procs) {
+        if (!p.isFinished()) {
+            auto procTime = std::chrono::system_clock::from_time_t(0); // Use process creation time? Or last log?
+            std::tm procTm = tm;
+            char timeStr[20];
+            std::strftime(timeStr, sizeof(timeStr), "%m/%d/%Y %I:%M:%S%p", &procTm);
+
+            std::cout << p.getName() << " (" << timeStr << ") "
+                "Core: " << p.getAssignedCoreId()
+                << "   " << p.getCurrentLine() << " / " << p.getTotalLines() << "\n";
+            foundRunning = true;
+        }
     }
-    std::cout << "\n===============\n";
+
+    if (!foundRunning) {
+        std::cout << "(none)\n";
+    }
+
+    std::cout << "\nFinished processes:\n";
+    bool foundFinished = false;
+    for (const auto& p : procs) {
+        if (p.isFinished()) {
+            // Same timestamp format
+            char timeStr[20];
+            std::strftime(timeStr, sizeof(timeStr), "%m/%d/%Y %I:%M:%S%p", &tm);
+
+            std::cout << p.getName() << " (" << timeStr << ") "
+                << "Finished   " << p.getCurrentLine() << " / " << p.getTotalLines() << "\n";
+            foundFinished = true;
+        }
+    }
+
+    if (!foundFinished) {
+        std::cout << "(none)\n";
+    }
+
+    std::cout << "----------------------------------------\n";
 }
 
 void ScreenManager::createAndAttach(const std::string& name) {

@@ -20,6 +20,7 @@ public:
     static void tick();
     static std::vector<Process>& getProcesses();
     static int getTotalTicks();
+    static std::vector<CPUCore> cores;
 
 
 private:
@@ -30,7 +31,6 @@ private:
     static std::vector<Process> global_processes;
     static int totalTicks;
     static int tickInterval;
-    static std::vector<CPUCore> cores;
     static std::vector<int> readyQueue;
     static std::vector<int> sleepingProcesses;
 };
