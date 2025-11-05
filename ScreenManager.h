@@ -10,4 +10,5 @@ public:
     static bool attachToProcess(const std::string& name);
     static void createAndAttach(const std::string& name); 
     static std::vector<Process>& getProcesses();
+    static void printUtilizationReport(bool toFile = true);
 };

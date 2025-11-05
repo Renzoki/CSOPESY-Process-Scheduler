@@ -144,6 +144,13 @@ int main() {
                         Scheduler::stop();
                         std::cout << "> ";
                     }
+                    else if (cmd == "report-util") {
+                        if (!initialized) {
+                            std::cout << "Error: Run 'initialize' first.\n";
+                            continue;
+                        }
+                        ScreenManager::printUtilizationReport(true); // true = save to file
+                    }
                     else {
                         std::cout << "\nUnknown command: " << cmd << " >:( \n> ";
                     }

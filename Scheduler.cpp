@@ -8,8 +8,8 @@
 #include <vector>
 #include <algorithm>
 
-int Scheduler::nextProcessId = 1;
 int Scheduler::totalTicks = 0;
+int Scheduler::nextProcessId = 1;
 bool Scheduler::running = false;
 std::vector<Process> Scheduler::global_processes;
 int Scheduler::tickCounter = 0;
@@ -20,6 +20,10 @@ std::vector<int> Scheduler::sleepingProcesses;
 
 std::vector<Process>& Scheduler::getProcesses() {
     return global_processes;
+}
+
+const std::vector<CPUCore>& Scheduler::getCores() {
+    return cores;
 }
 
 void Scheduler::initialize() {
@@ -87,7 +91,6 @@ void Scheduler::tick() {
         }
     }
 
-    // Execute on all cores
     for (auto& core : cores) {
         if (core.currentProcessId != -1) {
             Process& proc = global_processes[core.currentProcessId];
@@ -98,15 +101,12 @@ void Scheduler::tick() {
                 core.currentProcessId = -1;
             }
             else if (proc.getState() == Process::SLEEPING) {
-                // For RR: free core immediately
                 if (Config::getScheduler() == "rr") {
                     sleepingProcesses.push_back(core.currentProcessId);
                     core.currentProcessId = -1;
                 }
-                // For FCFS: keep process on core (handled by sleep loop)
             }
             else {
-                // RR preemption
                 if (Config::getScheduler() == "rr") {
                     core.quantumRemaining--;
                     if (core.quantumRemaining <= 0) {
@@ -118,14 +118,11 @@ void Scheduler::tick() {
                         core.currentProcessId = -1;
                     }
                 }
-                // FCFS: do nothing (runs to completion)
             }
         }
     }
 
-    // Assign processes AFTER execution (critical for both schedulers)
     if (Config::getScheduler() == "fcfs") {
-        // Multi-core FCFS: assign 1 process per free core
         for (auto& core : cores) {
             if (core.currentProcessId == -1 && !readyQueue.empty()) {
                 int pid = readyQueue.front();

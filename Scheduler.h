@@ -11,7 +11,7 @@ struct CPUCore {
 
 class Scheduler {
 public:
-    static void initialize(); // for resetting state
+    static void initialize();
     static void createDummyProcess();
     static void generateBatch(int count = 5);
     static void start();
@@ -19,18 +19,20 @@ public:
     static bool isRunning();
     static void tick();
     static std::vector<Process>& getProcesses();
-    static int getTotalTicks();
-    static std::vector<CPUCore> cores;
-
+    static const std::vector<CPUCore>& getCores();
+    static int getTotalTicks(); 
 
 private:
     static int nextProcessId;
     static std::string generateProcessName();
     static bool running;
     static int tickCounter;
-    static std::vector<Process> global_processes;
-    static int totalTicks;
     static int tickInterval;
+    static int totalTicks; 
+
+public:
+    static std::vector<Process> global_processes;
+    static std::vector<CPUCore> cores;
     static std::vector<int> readyQueue;
     static std::vector<int> sleepingProcesses;
 };
