@@ -19,7 +19,7 @@ bool Config::loaded = false;
 bool Config::load(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cerr << "Error: Could not open config file '" << filename << "'\n";
+        std::cerr << "\nError: Could not open config file '" << filename << "'\n";
         return false;
     }
 
@@ -106,7 +106,7 @@ bool Config::load(const std::string& filename) {
             catch (...) { goto invalid_value; }
         }
         else {
-            std::cerr << "Unknown parameter at line " << line_num << ": " << tokens[0] << "\n";
+            std::cerr << "\nUnknown parameter at line " << line_num << ": " << tokens[0] << "\n";
             file.close();
             return false;
         }
@@ -115,29 +115,29 @@ bool Config::load(const std::string& filename) {
     }
     file.close();
 
-    // Validate required fields
+    // validate required fields
     if (num_cpu == 0 || scheduler.empty() || quantum_cycles == 0 ||
         batch_process_freq == 0 || min_ins == 0 || max_ins == 0) {
-        std::cerr << "Missing or invalid required parameters.\n";
+        std::cerr << "\nMissing or invalid required parameters.\n";
         return false;
     }
 
     if (min_ins > max_ins) {
-        std::cerr << "min-ins cannot be greater than max-ins.\n";
+        std::cerr << "\nmin-ins cannot be greater than max-ins.\n";
         return false;
     }
 
     loaded = true;
-    std::cout << "Config loaded successfully.\n";
+    std::cout << "\nConfig loaded successfully.\n";
     return true;
 
 invalid_line:
-    std::cerr << "Invalid format at line " << line_num << ": " << line << "\n";
+    std::cerr << "\nInvalid format at line " << line_num << ": " << line << "\n";
     file.close();
     return false;
 
 invalid_value:
-    std::cerr << "Invalid value at line " << line_num << ": " << line << "\n";
+    std::cerr << "\nInvalid value at line " << line_num << ": " << line << "\n";
     file.close();
     return false;
 }
@@ -153,7 +153,7 @@ int Config::getDelayPerExec() { return delay_per_exec; }
 
 void Config::printSummary() {
     if (!loaded) return;
-	std::cout << "===== Configuration Attributes =====\n";
+	std::cout << "\n===== Configuration Attributes =====\n";
     std::cout << "   num-cpu: " << num_cpu << "\n";
     std::cout << "   scheduler: " << scheduler << "\n";
     std::cout << "   quantum-cycles: " << quantum_cycles << "\n";

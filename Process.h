@@ -24,10 +24,17 @@ public:
     void setVariable(const std::string& name, uint16_t value);
 
     const std::vector<std::string>& getLogs() const;
-    void addLog(const std::string& msg);
+    void addLog(const std::string& msg);              // for screen/manual
+    void addLog(const std::string& msg, int coreId);  // for scheduler
 
-    void executeNextInstruction(int nestedLevel = 0); // execute current instruction
-    void executeInstruction(const Instruction& instr, int nestedLevel = 0);
+    void executeNextInstruction(int coreId = -1, int nestedLevel = 0);
+    void executeInstruction(const Instruction& instr, int coreId, int nestedLevel);
+
+    enum State { READY, RUNNING, SLEEPING, FINISHED };
+    State getState() const;
+    void setState(State s);
+    int getSleepTicks() const;
+    void setSleepTicks(int ticks);
 
 private:
     std::string name;
@@ -37,10 +44,11 @@ private:
     std::map<std::string, uint16_t> variables;
     std::vector<std::string> logs;
 
-    // helpers
+    State state;
+    int sleepTicks;
+
     bool isNumber(const std::string& s) const;
     uint16_t getValue(const std::string& token) const;
     uint16_t clampUint16(int64_t v) const;
-
     std::string instrTypeAsString(Instruction::Type type) const;
 };

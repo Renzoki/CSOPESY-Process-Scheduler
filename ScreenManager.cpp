@@ -1,43 +1,46 @@
 #include "ScreenManager.h"
+#include "Scheduler.h" 
 #include <random>
 #include "Config.h"
 #include <iostream>
 #include <iterator>
 #include <algorithm>
 
-std::vector<Process> global_processes;
+static struct Initializer {
+    Initializer() {
+        Scheduler::getProcesses().reserve(10000);
+    }
+} init;
 
 
 std::vector<Process>& ScreenManager::getProcesses() {
-    return global_processes;
-}
-
-void ScreenManager::addProcess(const Process& p) {
-    global_processes.push_back(p);
+    return Scheduler::getProcesses();
 }
 
 void ScreenManager::listProcesses() {
+    auto& procs = Scheduler::getProcesses();
     bool found = false;
-    for (const auto& p : global_processes) {
-        if (!p.isFinished()) {
-            std::cout << p.getName() << "\n";
+    for (size_t i = 0; i < procs.size(); ++i) {
+        if (!procs[i].isFinished()) {
+            std::cout << "\n" << procs[i].getName() << " (line " << procs[i].getCurrentLine() << ")\n";
             found = true;
         }
     }
     if (!found) {
         std::cout << "No running processes.\n";
     }
+    std::cout << "\n===============\n";
 }
 
 void ScreenManager::createAndAttach(const std::string& name) {
     // heck if process with same name already exists and is running
-    auto it = std::find_if(global_processes.begin(), global_processes.end(),
+    auto it = std::find_if(Scheduler::getProcesses().begin(), Scheduler::getProcesses().end(),
         [&](const Process& p) {
             return p.getName() == name && !p.isFinished();
         });
 
-    if (it != global_processes.end()) {
-        std::cout << "Process " << name << " already exists.\n";
+    if (it != Scheduler::getProcesses().end()) {
+        std::cout << "\nProcess " << name << " already exists.\n";
         return;
     }
 
@@ -45,12 +48,12 @@ void ScreenManager::createAndAttach(const std::string& name) {
     std::vector<Instruction> instructions;
     Instruction printInstr;
     printInstr.type = Instruction::PRINT;
-    printInstr.args = { "\"Hello world from <name>!\"" };
+    printInstr.args = { "\"\nHello world from <name>!\"" };
     instructions.push_back(printInstr);
     Process newProc(name, instructions);
-    global_processes.push_back(newProc);
-    Process& procRef = global_processes.back();
-    size_t procID = global_processes.size(); //id
+    Scheduler::getProcesses().push_back(newProc);
+    Process& procRef = Scheduler::getProcesses().back();
+    size_t procID = Scheduler::getProcesses().size(); //id
 
     std::string cmd;
     while (true) {
@@ -76,32 +79,43 @@ void ScreenManager::createAndAttach(const std::string& name) {
 
             std::cout << "Current instruction line: " << procRef.getCurrentLine() << "\n";
             std::cout << "Lines of code: " << procRef.getTotalLines() << "\n";
-            // TEMP: execute next instruction on every process-smi (for testing)
-            if (!procRef.isFinished()) {
-                procRef.executeNextInstruction();
-            }
         }
         else {
-            std::cout << "Unknown command in screen.\n";
+            std::cout << "\nUnknown command in screen.\n";
         }
     }
 }
 
 bool ScreenManager::attachToProcess(const std::string& name) {
-    auto it = std::find_if(global_processes.begin(), global_processes.end(),
+    auto& procs = Scheduler::getProcesses();
+    Process* target = nullptr;
+    size_t pid = 0;
+    for (size_t i = 0; i < procs.size(); ++i) {
+        if (procs[i].getName() == name && !procs[i].isFinished()) {
+            target = &procs[i];
+            pid = i;
+            break;
+        }
+    }
+    if (!target) {
+        std::cout << "Process " << name << " not found.\n";
+        return false;
+    }
+
+    auto it = std::find_if(Scheduler::getProcesses().begin(), Scheduler::getProcesses().end(),
         [&](const Process& p) {
             return p.getName() == name && !p.isFinished();
         });
-    size_t procID = std::distance(global_processes.begin(), it) + 1;
+    size_t procID = std::distance(Scheduler::getProcesses().begin(), it) + 1;
 
-    if (it == global_processes.end()) {
+    if (it == Scheduler::getProcesses().end()) {
         std::cout << "Process " << name << " not found.\n";
         return false;
     }
 
     std::string cmd;
     while (true) {
-        std::cout << it->getName() << ":> ";
+        std::cout << "\n" << it->getName() << ":> ";
         std::getline(std::cin, cmd);
         if (cmd == "exit") {
             break;
@@ -123,12 +137,10 @@ bool ScreenManager::attachToProcess(const std::string& name) {
 
             std::cout << "Current instruction line: " << it->getCurrentLine() << "\n";
             std::cout << "Lines of code: " << it->getTotalLines() << "\n";
-            if (!it->isFinished()) {
-                it->executeNextInstruction();
-            }
+
         }
         else {
-            std::cout << "Unknown command in screen.\n";
+            std::cout << "\nUnknown command in screen.\n";
         }
     }
     return true;

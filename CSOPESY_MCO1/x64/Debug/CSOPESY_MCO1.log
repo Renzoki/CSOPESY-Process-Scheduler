@@ -1,8 +1,2 @@
-﻿  Config.cpp
-  Process.cpp
-  Scheduler.cpp
-  ScreenManager.cpp
-  main.cpp
-  Generating Code...
-  LINK : C:\Users\Vincent\Documents\GitHub\CSOPESY_MCO1\x64\Debug\CSOPESY_MCO1.exe not found or not built by the last incremental link; performing full link
+﻿  Scheduler.cpp
   CSOPESY_MCO1.vcxproj -> C:\Users\Vincent\Documents\GitHub\CSOPESY_MCO1\x64\Debug\CSOPESY_MCO1.exe
