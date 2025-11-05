@@ -117,20 +117,56 @@ void Process::executeInstruction(const Instruction& instr, int nestedLevel) {
     }
 
     case Instruction::ADD: {
-        if (instr.args.size() < 3) break;
-        uint16_t a = getValue(instr.args[1]);
-        uint16_t b = getValue(instr.args[2]);
-        setVariable(instr.args[0], clampUint16(int64_t(a) + int64_t(b)));
+        if (instr.args.size() < 3 && instr.args.size() != 2) break;
+
+        std::string target = instr.args[0];
+        std::string src1, src2;
+
+        if (instr.args.size() == 3) {
+            // Format: ADD target src1 src2
+            src1 = instr.args[1];
+            src2 = instr.args[2];
+            uint16_t a = getValue(src1);
+            uint16_t b = getValue(src2);
+            setVariable(target, clampUint16(int64_t(a) + int64_t(b)));
+        }
+        else if (instr.args.size() == 2) {
+            // Format: ADD target src
+            src1 = instr.args[1];
+            uint16_t oldVal = getVariable(target);
+            uint16_t addVal = getValue(src1);
+            setVariable(target, clampUint16(int64_t(oldVal) + int64_t(addVal)));
+        }
+
         break;
     }
 
+
     case Instruction::SUBTRACT: {
-        if (instr.args.size() < 3) break;
-        uint16_t a = getValue(instr.args[1]);
-        uint16_t b = getValue(instr.args[2]);
-        setVariable(instr.args[0], clampUint16(int64_t(a) - int64_t(b)));
+        if (instr.args.size() < 3 && instr.args.size() != 2) break;
+
+        std::string target = instr.args[0];
+        std::string src1, src2;
+
+        if (instr.args.size() == 3) {
+            // Format: SUBTRACT target src1 src2
+            src1 = instr.args[1];
+            src2 = instr.args[2];
+            uint16_t a = getValue(src1);
+            uint16_t b = getValue(src2);
+            setVariable(target, clampUint16(int64_t(a) - int64_t(b)));
+        }
+        else if (instr.args.size() == 2) {
+            // Format: SUBTRACT target src
+            src1 = instr.args[1];
+            uint16_t oldVal = getVariable(target);
+            uint16_t subVal = getValue(src1);
+            setVariable(target, clampUint16(int64_t(oldVal) - int64_t(subVal)));
+        }
+
         break;
     }
+
 
     case Instruction::SLEEP: {
         if (instr.args.empty()) break;
