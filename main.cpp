@@ -2,11 +2,6 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <chrono>
-#include <thread>
-#ifdef _WIN32
-#include <conio.h>
-#endif
 #include "Config.h"
 #include "ScreenManager.h"
 #include "Scheduler.h"
@@ -22,138 +17,205 @@ std::vector<std::string> splitCommand(const std::string& cmd) {
 }
 
 int main() {
-    int totalTicks = 0;
-
-    std::cout << "CSOPESY MCO1 !!!\n";
-    std::cout << ":> ";
-
+    std::string input;
     bool initialized = false;
-    using Clock = std::chrono::steady_clock;
-    auto lastTime = Clock::now();
-    const int TICKS_PER_SECOND = 1;
-    const auto TICK_DURATION = std::chrono::milliseconds(200 / TICKS_PER_SECOND);
-    std::string inputBuffer = "";
+
+    std::cout << R"(
+   _____   _____   ____   _____   ______    _____  __   __
+  / ____| / ____| / __ \ |  __ \ |  ____|  / ____| \ \ / /
+ | |     | (___  | |  | || |__) || |___   | (___    \ V / 
+ | |      \___ \ | |  | ||  ___/ |  ___|   \___ \    | |
+ | |____  ____) || |__| || |     | |____   ____) |   | |        
+  \_____||_____/  \____/ |_|     |______| |_____/    |_|      
+ 
+    )" << std::endl;
+    std::cout << "-----------------------------------------------------\n";
+    std::cout << "Welcome to CSOPESY Emulator!\n\n";
+    std::cout << "Developers:\n";
+    std::cout << "Fourrier, Lara\n";
+    std::cout << "Laxa, Joshua\n";
+    std::cout << "Tabuzo, Vincent\n\n";
+    std::cout << "Last updated: 11-5-2025\n";
+    std::cout << "-----------------------------------------------------\n\n";
+ 
+
 
     while (true) {
-        // === CPU TICKS === working noq
-        auto now = Clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime);
-        int ticksElapsed = static_cast<int>(elapsed.count() / TICK_DURATION.count());
 
-        if (ticksElapsed > 0) {
-            for (int i = 0; i < ticksElapsed; ++i) {
-                Scheduler::tick();
-            }
-            lastTime = now;
+        Scheduler::tick(); // ticks!
+
+
+
+        std::cout << "> ";
+
+        std::getline(std::cin, input);
+
+
+
+        if (input.empty()) continue;
+
+
+
+        auto tokens = splitCommand(input);
+
+        std::string cmd = tokens[0];
+
+
+
+        if (cmd == "exit") {
+
+            break;
+
         }
 
-        // user input (nesting hell)
-#ifdef _WIN32
-        if (_kbhit()) {
-            char c = _getch();
-            if (c == '\r' || c == '\n') {
-                if (!inputBuffer.empty()) {
-                    auto tokens = splitCommand(inputBuffer);
-                    std::string cmd = tokens.empty() ? "" : tokens[0];
+        else if (cmd == "initialize") {
 
-                    if (cmd == "exit") {
+            if (tokens.size() != 1) {
 
-                        break;
-                    }
-                    else if (cmd == "initialize") {
-                        if (tokens.size() != 1) {
-                            std::cout << "\nUsage: initialize\n> ";
-                        }
-                        else if (!initialized) {
-                            if (!Config::load("config.txt")) {
-                                std::cout << "\nInitialization failed.\n> ";
-                            }
-                            else {
-                                Config::printSummary();
-                                Scheduler::initialize();
-                                initialized = true;
-                                std::cout << "> ";
-                            }
-                        }
-                        else {
-                            std::cout << "\nAlready initialized.\n> ";
-                        }
-                    }
-                    else if (cmd == "screen") {
-                        if (!initialized) {
-                            std::cout << "\nError: Run 'initialize' first.\n> ";
-                        }
-                        else if (tokens.size() >= 2) {
-                            if (tokens[1] == "-ls") {
-                                ScreenManager::listProcesses();
-                                std::cout << "> ";
-                            }
-                            else if (tokens[1] == "-s" && tokens.size() >= 3) {
-                                ScreenManager::createAndAttach(tokens[2]);
-                                std::cout << "> "; 
+                std::cout << "Usage: initialize\n";
 
-                            }
-                            else if (tokens[1] == "-r" && tokens.size() >= 3) {
-                                ScreenManager::attachToProcess(tokens[2]);
-                                std::cout << "> "; 
-                            }
-                            else {
-                                std::cout << "\nUsage: screen -ls | screen -s <name> | screen -r <name>\n> ";
-                            }
-                        }
-                        else {
-                            std::cout << "\nUsage: screen -ls | screen -s <name> | screen -r <name>\n> ";
-                        }
-                    }
-                    else if (cmd == "scheduler-test") {
-                        if (!initialized) {
-                            std::cout << "\nError: Run 'initialize' first.\n> ";
-                        }
-                        else {
-                            std::cout << "\nGenerating 5 dummy processes...\n";
-                            Scheduler::generateBatch(5);
-                            std::cout << "\nDone! :D\n> ";
-                        }
-                    }
-                    else if (cmd == "scheduler-start") {
-                        if (!initialized) {
-                            std::cout << "\nError: Run 'initialize' first.\n> ";
-                        }
-                        else {
-                            Scheduler::start();
-                            std::cout << "> ";
-                        }
-                    }
-                    else if (cmd == "scheduler-stop") {
-                        Scheduler::stop();
-                        std::cout << "> ";
-                    }
-                    else {
-                        std::cout << "\nUnknown command: " << cmd << " >:( \n> ";
-                    }
-                    inputBuffer = "";
+                continue;
+
+            }
+
+
+
+            if (!Config::load("config.txt")) {
+
+                std::cout << "Initialization failed.\n";
+
+                continue;
+
+            }
+
+            Config::printSummary();
+
+            initialized = true;
+
+        }
+
+        else if (cmd == "screen") {
+
+            if (!initialized) {
+
+                std::cout << "Error: Run 'initialize' first.\n";
+
+                continue;
+
+            }
+
+            if (tokens.size() >= 2) {
+
+                if (tokens[1] == "-ls") {
+
+                    //ScreenManager::listProcesses();
+
+                    ScreenManager sm;
+
+                    sm.printUtilizationReport(false);
+
                 }
+
+
+
+                else if (tokens[1] == "-util") {
+
+                    if (!initialized) {
+
+                        std::cout << "Error: Run 'initialize' first.\n";
+
+                        continue;
+
+                    }
+
+                    ScreenManager sm;
+
+                    sm.printUtilizationReport(true);
+
+                }
+
+
+
+                else if (tokens[1] == "-s" && tokens.size() >= 3) {
+
+                    ScreenManager::createAndAttach(tokens[2]);
+
+                }
+
+                else if (tokens[1] == "-r" && tokens.size() >= 3) {
+
+                    ScreenManager::attachToProcess(tokens[2]);
+
+                }
+
                 else {
-                    std::cout << "\n> ";    
-                }
-            }
-            else if (c == '\b') {
-                if (!inputBuffer.empty()) {
-                    inputBuffer.pop_back();
-                    std::cout << "\b \b";
-                }
-            }
-            else if (c >= 32 && c <= 126) { 
-                inputBuffer += c;
-                std::cout << c;
-            }
-        }
-#endif
 
-        // Small delay to reduce CPU usage (hopefully)
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                    std::cout << "Usage: screen -ls | screen -s <name> | screen -r <name>\n";
+
+                }
+
+            }
+
+            else {
+
+                std::cout << "Usage: screen -ls | screen -s <name> | screen -r <name>\n";
+
+            }
+
+        }
+
+        else if (cmd == "scheduler-test") {
+
+            if (!initialized) {
+
+                std::cout << "Error: Run 'initialize' first.\n";
+
+                continue;
+
+            }
+
+            std::cout << "Generating 5 dummy processes...\n";
+
+            Scheduler::generateBatch(5);
+
+            std::cout << "Done! :D\n";
+
+        }
+
+        else if (cmd == "scheduler-start") {
+
+            if (!initialized) {
+
+                std::cout << "Error: Run 'initialize' first.\n";
+
+                continue;
+
+            }
+
+            Scheduler::start();
+
+        }
+
+        else if (cmd == "scheduler-stop") {
+
+            Scheduler::stop();
+
+        }
+
+        else {
+
+            std::cout << "Unknown command: " << cmd << " >:( \n";
+
+        }
+
+
+
     }
 
-    std::cout << "\nThanks!\n";
+
+
+    std::cout << "Thanks!\n";
+
     return 0;
+
 }
