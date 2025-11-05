@@ -5,6 +5,8 @@
 #include <iterator>
 #include <algorithm>
 #include <sstream>
+#include <fstream>
+#include <iomanip>
 
 std::vector<Process> global_processes;
 
@@ -244,4 +246,68 @@ bool ScreenManager::attachToProcess(const std::string& name) {
         }
     }
     return true;
+}
+
+void ScreenManager::printUtilizationReport(bool toFile) {
+    std::ostream* outStream;
+    std::ofstream file;
+    if (toFile) {
+        file.open("csopesy-log.txt", std::ios::out);
+        if (!file.is_open()) {
+            std::cout << "Error: Cannot open csopesy-log.txt for writing.\n";
+            return;
+        }
+        outStream = &file;
+    }
+    else {
+        outStream = &std::cout;
+    }
+
+    int totalCores = Config::getNumCpu(); // Assuming Config has this
+    int running = 0;
+    int finished = 0;
+
+    for (const auto& p : global_processes) {
+        if (p.isFinished()) finished++;
+        else running++;
+    }
+
+    int usedCores = std::min(running, totalCores);
+    double utilization = (totalCores > 0) ? (100.0 * usedCores / totalCores) : 0.0;
+
+    (*outStream) << "===== CPU Utilization Report =====\n";
+    (*outStream) << "Cores used: " << usedCores << " / " << totalCores << "\n";
+    (*outStream) << std::fixed << std::setprecision(2)
+        << "CPU Utilization: " << utilization << "%\n\n";
+
+    (*outStream) << "Running Processes:\n";
+    bool hasRunning = false;
+    for (size_t i = 0; i < global_processes.size(); ++i) {
+        const auto& p = global_processes[i];
+        if (!p.isFinished()) {
+            (*outStream) << "  " << p.getName() << " (ID " << i + 1 << ") - Line "
+                << p.getCurrentLine() << " / " << p.getTotalLines() << "\n";
+            hasRunning = true;
+        }
+    }
+    if (!hasRunning) (*outStream) << "  None\n";
+
+    (*outStream) << "\nFinished Processes:\n";
+    bool hasFinished = false;
+    for (size_t i = 0; i < global_processes.size(); ++i) {
+        const auto& p = global_processes[i];
+        if (p.isFinished()) {
+            (*outStream) << "  " << p.getName() << " (ID " << i + 1 << ") - Line "
+                << p.getCurrentLine() << " / " << p.getTotalLines() << "\n";
+            hasFinished = true;
+        }
+    }
+    if (!hasFinished) (*outStream) << "  None\n";
+
+    (*outStream) << "==================================\n";
+
+    if (toFile) {
+        file.close();
+        std::cout << "CPU utilization report saved to csopesy-log.txt\n";
+    }
 }
