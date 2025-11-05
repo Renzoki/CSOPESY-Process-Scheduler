@@ -56,8 +56,20 @@ int main() {
             }
             if (tokens.size() >= 2) {
                 if (tokens[1] == "-ls") {
-                    ScreenManager::listProcesses();
+                    //ScreenManager::listProcesses();
+                    ScreenManager sm;
+                    sm.printUtilizationReport(false);
                 }
+                
+                else if (tokens[1] == "-util") {
+                    if (!initialized) {
+                        std::cout << "Error: Run 'initialize' first.\n";
+                        continue;
+                    }
+                    ScreenManager sm;
+                    sm.printUtilizationReport(true);
+                }
+
                 else if (tokens[1] == "-s" && tokens.size() >= 3) {
                     ScreenManager::createAndAttach(tokens[2]);
                 }
